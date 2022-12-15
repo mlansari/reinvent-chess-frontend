@@ -2,14 +2,37 @@
   "name": "chess_frontend",
   "version": "1.0.0",
   "description": "A simple HTML frontend to play chess on",
-  "main": "index.ts",
+  "source": [
+    "index.html",
+    "src/index.ts"
+  ],
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "parcel ",
+    "build": "parcel build",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "clean": "rm -rf dist"
   },
   "repository": {
     "type": "git",
     "url": "https://github.com/mlansari/reinvent-chess-frontend.git"
   },
+  "staticFiles": {
+    "staticOutPath": "assets"
+  },
   "author": "Mohamed Lansari",
-  "license": "MIT"
+  "license": "MIT",
+  "dependencies": {
+    "@types/node": "^18.11.15",
+    "@types/pixi.js": "^5.0.0",
+    "gulp-typescript": "^6.0.0-alpha.1",
+    "pixi.js": "^7.0.5",
+    "prettier": "^2.8.1",
+    "typescript": "^4.9.4"
+  },
+  "devDependencies": {
+    "parcel": "^2.8.2",
+    "parcel-reporter-static-files-copy": "^1.4.0",
+    "punycode": "^1.4.1",
+    "querystring-es3": "^0.2.1"
+  }
 }
