@@ -1,0 +1,140 @@
+{"frames": {
+
+"black_bishop":
+{
+	"frame": {"x":0,"y":0,"w":127,"h":128},
+	"rotated": false,
+	"trimmed": false,
+	"spriteSourceSize": {"x":0,"y":0,"w":127,"h":128},
+	"sourceSize": {"w":127,"h":128}
+},
+"black_king":
+{
+	"frame": {"x":127,"y":0,"w":128,"h":128},
+	"rotated": false,
+	"trimmed": false,
+	"spriteSourceSize": {"x":0,"y":0,"w":128,"h":128},
+	"sourceSize": {"w":128,"h":128}
+},
+"black_knight":
+{
+	"frame": {"x":255,"y":0,"w":116,"h":128},
+	"rotated": false,
+	"trimmed": false,
+	"spriteSourceSize": {"x":0,"y":0,"w":116,"h":128},
+	"sourceSize": {"w":116,"h":128}
+},
+"black_pawn":
+{
+	"frame": {"x":371,"y":0,"w":108,"h":128},
+	"rotated": false,
+	"trimmed": false,
+	"spriteSourceSize": {"x":0,"y":0,"w":108,"h":128},
+	"sourceSize": {"w":108,"h":128}
+},
+"black_queen":
+{
+	"frame": {"x":479,"y":0,"w":139,"h":128},
+	"rotated": false,
+	"trimmed": false,
+	"spriteSourceSize": {"x":0,"y":0,"w":139,"h":128},
+	"sourceSize": {"w":139,"h":128}
+},
+"black_rook":
+{
+	"frame": {"x":618,"y":0,"w":118,"h":128},
+	"rotated": false,
+	"trimmed": false,
+	"spriteSourceSize": {"x":0,"y":0,"w":118,"h":128},
+	"sourceSize": {"w":118,"h":128}
+},
+"square_brown_dark":
+{
+	"frame": {"x":736,"y":0,"w":128,"h":128},
+	"rotated": false,
+	"trimmed": false,
+	"spriteSourceSize": {"x":0,"y":0,"w":128,"h":128},
+	"sourceSize": {"w":128,"h":128}
+},
+"square_brown_light":
+{
+	"frame": {"x":864,"y":0,"w":128,"h":128},
+	"rotated": false,
+	"trimmed": false,
+	"spriteSourceSize": {"x":0,"y":0,"w":128,"h":128},
+	"sourceSize": {"w":128,"h":128}
+},
+"square_gray_dark":
+{
+	"frame": {"x":992,"y":0,"w":128,"h":128},
+	"rotated": false,
+	"trimmed": false,
+	"spriteSourceSize": {"x":0,"y":0,"w":128,"h":128},
+	"sourceSize": {"w":128,"h":128}
+},
+"square_gray_light":
+{
+	"frame": {"x":1120,"y":0,"w":128,"h":128},
+	"rotated": false,
+	"trimmed": false,
+	"spriteSourceSize": {"x":0,"y":0,"w":128,"h":128},
+	"sourceSize": {"w":128,"h":128}
+},
+"white_bishop":
+{
+	"frame": {"x":1248,"y":0,"w":127,"h":128},
+	"rotated": false,
+	"trimmed": false,
+	"spriteSourceSize": {"x":0,"y":0,"w":127,"h":128},
+	"sourceSize": {"w":127,"h":128}
+},
+"white_king":
+{
+	"frame": {"x":1375,"y":0,"w":128,"h":128},
+	"rotated": false,
+	"trimmed": false,
+	"spriteSourceSize": {"x":0,"y":0,"w":128,"h":128},
+	"sourceSize": {"w":128,"h":128}
+},
+"white_knight":
+{
+	"frame": {"x":1503,"y":0,"w":116,"h":128},
+	"rotated": false,
+	"trimmed": false,
+	"spriteSourceSize": {"x":0,"y":0,"w":116,"h":128},
+	"sourceSize": {"w":116,"h":128}
+},
+"white_pawn":
+{
+	"frame": {"x":1619,"y":0,"w":108,"h":128},
+	"rotated": false,
+	"trimmed": false,
+	"spriteSourceSize": {"x":0,"y":0,"w":108,"h":128},
+	"sourceSize": {"w":108,"h":128}
+},
+"white_queen":
+{
+	"frame": {"x":1727,"y":0,"w":140,"h":128},
+	"rotated": false,
+	"trimmed": false,
+	"spriteSourceSize": {"x":0,"y":0,"w":140,"h":128},
+	"sourceSize": {"w":140,"h":128}
+},
+"white_rook":
+{
+	"frame": {"x":1867,"y":0,"w":118,"h":128},
+	"rotated": false,
+	"trimmed": false,
+	"spriteSourceSize": {"x":0,"y":0,"w":118,"h":128},
+	"sourceSize": {"w":118,"h":128}
+}},
+"meta": {
+	"app": "https://www.codeandweb.com/texturepacker",
+	"version": "1.0",
+	"image": "chess_spritesheet.png",
+	"format": "RGBA8888",
+	"size": {"w":1985,"h":128},
+	"scale": "1",
+	"smartupdate": "$TexturePacker:SmartUpdate:cfbeaf561f1592c6efe81dc087ae0fc3:1703e62d7c9e6d62bba13a1e5fe26bd9:e8bc6c478c754d7be495f8c08cbd64f8$"
+}
+}
