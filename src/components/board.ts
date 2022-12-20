@@ -1,4 +1,12 @@
-import { PieceType, PieceColor } from "../constants"
+import {
+  PieceType,
+  PieceColor,
+  fenPieceMapping,
+  fenSkipMapping,
+  defaultBoardFen,
+  fenCastlingMapping,
+  algebraicNotationToIndexMapping,
+} from "../constants"
 import { PieceLocation } from "../types"
 
 /**
@@ -10,64 +18,82 @@ import { PieceLocation } from "../types"
  * Has a simple board state representation exported to maintain board history in a separate class
  */
 class ChessBoard {
-  whitePawnBoard: number[]
-  whiteKnightBoard: number[]
-  whiteBishopBoard: number[]
-  whiteRookBoard: number[]
-  whiteQueenBoard: number[]
-  whiteKingBoard: number[]
+  // whitePawnBoard: number[]
+  // whiteKnightBoard: number[]
+  // whiteBishopBoard: number[]
+  // whiteRookBoard: number[]
+  // whiteQueenBoard: number[]
+  // whiteKingBoard: number[]
 
-  blackPawnBoard: number[]
-  blackKnightBoard: number[]
-  blackBishopBoard: number[]
-  blackRookBoard: number[]
-  blackQueenBoard: number[]
-  blackKingBoard: number[]
+  // blackPawnBoard: number[]
+  // blackKnightBoard: number[]
+  // blackBishopBoard: number[]
+  // blackRookBoard: number[]
+  // blackQueenBoard: number[]
+  // blackKingBoard: number[]
 
   boardRepresentation: number[]
+  currentTurn: PieceColor
+  castlingAvailability: number
+  enPassantTargetSquareIndex: number
+  halfmoveClockValue: number
+  currentMove: number
 
   /**
-   * Sets up the default board state for chess
+   * Sets up the board state for chess game using FEN
+   *
+   * @param {string} positionFen The Forsyth-Edwards Notation for the starting board state
    */
-  constructor() {
-    this.boardRepresentation = new Array(64)
+  constructor(positionFen: string = defaultBoardFen) {
+    this.boardRepresentation = Array(64)
 
-    // TODO: load default board state from file, to support fisher random
-    this.boardRepresentation[0] = PieceColor.White | PieceType.Rook
-    this.boardRepresentation[1] = PieceColor.White | PieceType.Knight
-    this.boardRepresentation[2] = PieceColor.White | PieceType.Bishop
-    this.boardRepresentation[3] = PieceColor.White | PieceType.Queen
-    this.boardRepresentation[4] = PieceColor.White | PieceType.King
-    this.boardRepresentation[5] = PieceColor.White | PieceType.Bishop
-    this.boardRepresentation[6] = PieceColor.White | PieceType.Knight
-    this.boardRepresentation[7] = PieceColor.White | PieceType.Rook
+    // Split FEN string into fields
+    const fields: string[] = positionFen.split(" ")
 
-    this.boardRepresentation[8] = PieceColor.White | PieceType.Pawn
-    this.boardRepresentation[9] = PieceColor.White | PieceType.Pawn
-    this.boardRepresentation[10] = PieceColor.White | PieceType.Pawn
-    this.boardRepresentation[11] = PieceColor.White | PieceType.Pawn
-    this.boardRepresentation[12] = PieceColor.White | PieceType.Pawn
-    this.boardRepresentation[13] = PieceColor.White | PieceType.Pawn
-    this.boardRepresentation[14] = PieceColor.White | PieceType.Pawn
-    this.boardRepresentation[15] = PieceColor.White | PieceType.Pawn
+    // Parse board state field
+    let rankIndex = 7
+    let fileIndex = 0
+    fields[0].split("/").map((rank: string) => {
+      const rankArray = [...rank]
+      rankArray.forEach((character: string) => {
+        const boardIndex = rankIndex * 8 + fileIndex
+        if (character in fenPieceMapping) {
+          this.boardRepresentation[boardIndex] = fenPieceMapping[character]
+          fileIndex++
+        } else {
+          fileIndex += fenSkipMapping[character]
+        }
+      })
+      rankIndex--
+      fileIndex = 0
+    })
 
-    this.boardRepresentation[48] = PieceColor.Black | PieceType.Pawn
-    this.boardRepresentation[49] = PieceColor.Black | PieceType.Pawn
-    this.boardRepresentation[50] = PieceColor.Black | PieceType.Pawn
-    this.boardRepresentation[51] = PieceColor.Black | PieceType.Pawn
-    this.boardRepresentation[52] = PieceColor.Black | PieceType.Pawn
-    this.boardRepresentation[53] = PieceColor.Black | PieceType.Pawn
-    this.boardRepresentation[54] = PieceColor.Black | PieceType.Pawn
-    this.boardRepresentation[55] = PieceColor.Black | PieceType.Pawn
+    // Parse active color state field
+    this.currentTurn = fields[1] == "w" ? PieceColor.White : PieceColor.Black
 
-    this.boardRepresentation[56] = PieceColor.Black | PieceType.Rook
-    this.boardRepresentation[57] = PieceColor.Black | PieceType.Knight
-    this.boardRepresentation[58] = PieceColor.Black | PieceType.Bishop
-    this.boardRepresentation[59] = PieceColor.Black | PieceType.Queen
-    this.boardRepresentation[60] = PieceColor.Black | PieceType.King
-    this.boardRepresentation[61] = PieceColor.Black | PieceType.Bishop
-    this.boardRepresentation[62] = PieceColor.Black | PieceType.Knight
-    this.boardRepresentation[63] = PieceColor.Black | PieceType.Rook
+    // Parse Castling availability field
+    this.castlingAvailability = 0
+    const fenAvailability = [...fields[2]]
+    fenAvailability.forEach((character: string) => {
+      this.castlingAvailability =
+        this.castlingAvailability | fenCastlingMapping[character]
+    })
+
+    // Parse en passant target square field
+    if (fields[3] == "-") {
+      this.enPassantTargetSquareIndex = -1
+    } else {
+      const targetSquareChars = [...fields[3]]
+      this.enPassantTargetSquareIndex =
+        (Number(targetSquareChars[1]) - 1) * 8 +
+        algebraicNotationToIndexMapping[targetSquareChars[0]]
+    }
+
+    // Parse halfmove clock field
+    this.halfmoveClockValue = Number(fields[4])
+
+    // Parse fullmove field
+    this.currentMove = Number(fields[5])
   }
 
   public getPieceLocations(

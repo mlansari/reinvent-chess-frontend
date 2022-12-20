@@ -17,7 +17,7 @@ async function init() {
   const screenWidth = app.screen.width
   const screenHeight = app.screen.height
 
-  // Create board state
+  // Create board state with default piece setup
   const state = new ChessBoard()
 
   const chessSheet: Spritesheet = (await Assets.load(

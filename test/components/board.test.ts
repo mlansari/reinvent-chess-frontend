@@ -29,4 +29,19 @@ describe("ChessBoard", () => {
 
     expect(locations.length).toBe(8)
   })
+
+  test("a chessboard created with custom fen can have something other than a rook in a1", () => {
+    const board = new ChessBoard("8/8/8/8/8/8/8/p7 w - - 0 1")
+
+    expect(board.boardRepresentation[0]).toBe(PieceColor.Black | PieceType.Pawn)
+  })
+
+  test("a chessboard created with custom fen can have an arbitrary number of pieces", () => {
+    const board = new ChessBoard(
+      "pppppppp/pppp4/4pppp/6pp/pp6/7p/p7/8 w - - 0 1"
+    )
+    const locations = board.getPieceLocations(PieceColor.Black, PieceType.Pawn)
+
+    expect(locations.length).toBe(22)
+  })
 })
