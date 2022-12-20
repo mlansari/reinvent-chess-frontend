@@ -44,4 +44,28 @@ describe("ChessBoard", () => {
 
     expect(locations.length).toBe(22)
   })
+
+  test("ChessBoard.mapAlgbraicNotationToIndex maps a1 correctly", () => {
+    const index = ChessBoard.mapAlgebraicNotationToIndex("a1")
+
+    expect(index).toBe(0)
+  })
+
+  test("ChessBoard.mapAlgebraicNotationToIndex maps h8 correctly", () => {
+    const index = ChessBoard.mapAlgebraicNotationToIndex("h8")
+
+    expect(index).toBe(63)
+  })
+
+  test("ChessBoard.mapAlgebraicNotationToIndex maps h1 correctly", () => {
+    const index = ChessBoard.mapAlgebraicNotationToIndex("h1")
+
+    expect(index).toBe(7)
+  })
+
+  test("ChessBoard.mapAlgebraicNotationToIndex maps a8 correctly", () => {
+    const index = ChessBoard.mapAlgebraicNotationToIndex("a8")
+
+    expect(index).toBe(56)
+  })
 })

@@ -83,10 +83,9 @@ class ChessBoard {
     if (fields[3] == "-") {
       this.enPassantTargetSquareIndex = -1
     } else {
-      const targetSquareChars = [...fields[3]]
-      this.enPassantTargetSquareIndex =
-        (Number(targetSquareChars[1]) - 1) * 8 +
-        algebraicNotationToIndexMapping[targetSquareChars[0]]
+      this.enPassantTargetSquareIndex = ChessBoard.mapAlgebraicNotationToIndex(
+        fields[3]
+      )
     }
 
     // Parse halfmove clock field
@@ -110,6 +109,14 @@ class ChessBoard {
       }
     }
     return locations
+  }
+
+  public static mapAlgebraicNotationToIndex(notation: string): number {
+    const characters = [...notation]
+    return (
+      (Number(characters[1]) - 1) * 8 +
+      algebraicNotationToIndexMapping[characters[0]]
+    )
   }
 }
 
