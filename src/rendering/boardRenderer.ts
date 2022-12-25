@@ -52,8 +52,13 @@ class BoardRenderer {
     this.boardContainer.scale.set(scaleFactor)
   }
 
-  getBoardContainer(): Container {
+  public getBoardContainer(): Container {
     return this.boardContainer
+  }
+
+  public setCenteringDimensions(width: number, height: number): void {
+    this.boardContainer.x = (width / 2) - (this.boardContainer.width / 2)
+    this.boardContainer.y = (height / 2) - (this.boardContainer.height / 2)
   }
 
   renderBoardState(boardState: ChessBoard) {
@@ -120,8 +125,8 @@ class BoardRenderer {
     locList.map((location: PieceLocation) => {
       const pieceSprite = new Sprite(tex)
       pieceSprite.anchor.set(0.5)
-      pieceSprite.x = 64 + 128 * location.rank
-      pieceSprite.y = 64 + 128 * location.file
+      pieceSprite.x = 64 + 128 * location.file
+      pieceSprite.y = 64 + 128 * location.rank
 
       pieceList.push(pieceSprite)
     })

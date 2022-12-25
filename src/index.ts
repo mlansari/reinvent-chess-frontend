@@ -13,6 +13,7 @@ document.body.appendChild(app.view as HTMLCanvasElement)
 
 const scaleFactor = 0.5
 
+// TODO: Abstract this into a class
 async function init() {
   const screenWidth = app.screen.width
   const screenHeight = app.screen.height
@@ -46,6 +47,8 @@ async function init() {
     chessSheet.textures["square_gray_dark"],
     pieceRegistry
   )
+
+  gameBoard.setCenteringDimensions(screenWidth, screenHeight)
 
   app.stage.addChild(gameBoard.getBoardContainer())
 
