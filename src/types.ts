@@ -1,4 +1,6 @@
-import { Texture } from "pixi.js"
+import { Graphics, Texture } from "pixi.js"
+import { Piece } from "./components/piece"
+import { Colors } from "./constants"
 
 export interface PieceRegistry {
   whitePawn: Texture
@@ -19,4 +21,19 @@ export interface PieceRegistry {
 export interface PieceLocation {
   rank: number
   file: number
+}
+
+export interface PieceContainer {
+  pawns: Piece[]
+  knights: Piece[]
+  bishops: Piece[]
+  rooks: Piece[]
+  queens: Piece[]
+  king: Piece
+}
+
+export interface CellState {
+  piece: Piece
+  color: Colors
+  image: Graphics
 }

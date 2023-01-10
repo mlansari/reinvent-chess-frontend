@@ -42,8 +42,7 @@ export const fenSkipMapping = {
   "8": 8,
 }
 
-export const defaultBoardFen: string =
-  "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
+export const defaultBoardFen: string = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
 
 export enum CastlingAvailability {
   K = 1,
@@ -81,5 +80,14 @@ export const indexToAlgebraicLetterMapping = {
   6: "f",
   7: "g",
   8: "h",
-  9: "X"
+  9: "X",
 }
+
+export enum Colors {
+  LightSquare = 0xe3c16f,
+  DarkSquare = 0xb88b4a,
+
+  Text = 0x000000,
+}
+
+export const CellSize = 128
