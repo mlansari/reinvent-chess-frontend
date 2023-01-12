@@ -32,8 +32,16 @@ export interface PieceContainer {
   king: Piece
 }
 
+export interface MoveOptions {
+  quiet: number[]
+  captures: number[]
+}
+
 export interface CellState {
   piece: Piece
   color: Colors
   image: Graphics
+
+  isSelected: boolean
+  isHighlighted: boolean
 }

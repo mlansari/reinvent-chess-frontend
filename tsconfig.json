@@ -2,7 +2,8 @@
     "compilerOptions": {
         "moduleResolution": "node",
         "target": "es6",
-        "esModuleInterop": true, 
+        "esModuleInterop": true,
+        "sourceMap": true,
         "types": [
             "jest"
         ]

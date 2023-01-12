@@ -1,4 +1,4 @@
-import { Container, Graphics, Text, Texture } from "pixi.js"
+import { Container, FederatedMouseEvent, Graphics, Point, Text } from "pixi.js"
 import {
   PieceType,
   PieceColor,
@@ -11,6 +11,9 @@ import {
   OFF_BOARD,
   Colors,
   CellSize,
+  PIECE_COLOR_MASK,
+  PIECE_TYPE_MASK,
+  MailboxToBoardIndexMap,
 } from "../constants"
 import { PieceLocation, PieceRegistry, CellState, PieceContainer } from "../types"
 import { Piece } from "./piece"
@@ -21,7 +24,7 @@ import { Piece } from "./piece"
  * A logical representation of the chess board state.  Used to perform logic such as piece moves
  * and captures, and is responsible for evaluating the legality of attempted moves
  *
- * Has a simple board state representation exported to maintain board history in a separate class
+ * Also handles the rendering of board state
  */
 export class ChessBoard extends Container {
   // Utility ranks and files boards for easy calcuation
@@ -44,6 +47,7 @@ export class ChessBoard extends Container {
   rankNumbers: Text[] = []
   blackPieces: PieceContainer = null
   whitePieces: PieceContainer = null
+  selectedCell: CellState
 
   /**
    * Sets up the board state for chess game using FEN, and handles owning and rendering pieces
@@ -67,7 +71,6 @@ export class ChessBoard extends Container {
     }
 
     this.setBoardStateFromFen(positionFen)
-    this.outputBoardRepresentation(this.boardRepresentation)
 
     // Set up visual representation of board itself
     this.generateBoardCells()
@@ -81,12 +84,17 @@ export class ChessBoard extends Container {
    * @param {string} fenString
    */
   private setBoardStateFromFen(fenString: string): void {
+    // Clear proper board locations to empty
+    MailboxToBoardIndexMap.forEach((value: number, index: number) => {
+      if (value !== -1) this.boardRepresentation[index] = 0
+    })
+
     // Split FEN string into fields
     const fields: string[] = fenString.split(" ")
 
     // Parse board state field
     let fileIndex = 0
-    let rankIndex = 7
+    let rankIndex = 0
     fields[0].split("/").map((rank: string) => {
       const rankArray = [...rank]
       rankArray.forEach((character: string) => {
@@ -98,7 +106,7 @@ export class ChessBoard extends Container {
           fileIndex += fenSkipMapping[character]
         }
       })
-      rankIndex--
+      rankIndex++
       fileIndex = 0
     })
 
@@ -135,12 +143,14 @@ export class ChessBoard extends Container {
     for (let rank = 0; rank < 8; rank++) {
       for (let file = 0; file < 8; file++) {
         const index = rank * 8 + file
-        const color = (rank + file) % 2 == (this.isFlipped ? 0 : 1) ? Colors.LightSquare : Colors.DarkSquare
+        const color = (rank + file) % 2 == (this.isFlipped ? 1 : 0) ? Colors.LightSquare : Colors.DarkSquare
 
         this.cellState[index] = {
           color,
           piece: null,
           image: new Graphics(),
+          isSelected: false,
+          isHighlighted: false,
         }
 
         const x = file * CellSize
@@ -151,6 +161,33 @@ export class ChessBoard extends Container {
         this.cellState[index].image.y = y
 
         this.addChild(this.cellState[index].image)
+      }
+    }
+  }
+
+  /**
+   * Redraw the board cells with any special modified colors needed to indicate game state (or debug state)
+   *
+   */
+  private redrawBoardCells(): void {
+    for (let rank = 0; rank < 8; rank++) {
+      for (let file = 0; file < 8; file++) {
+        const cell = this.cellState[rank * 8 + file]
+        let color
+
+        if (cell.isHighlighted) {
+          if (cell.color == Colors.LightSquare) {
+            color = Colors.LightHighlight
+          } else {
+            color = Colors.DarkHighlight
+          }
+        } else if (cell.isSelected) {
+          color = Colors.Selected
+        } else {
+          color = cell.color
+        }
+
+        cell.image.clear().beginFill(color).drawRect(0, 0, CellSize, CellSize).endFill()
       }
     }
   }
@@ -226,23 +263,33 @@ export class ChessBoard extends Container {
     for (let rank = 0; rank < 8; rank++) {
       for (let file = 0; file < 8; file++) {
         const index = rank * 8 + file
-        if (trimmedBoard[index] !== 32) {
-          const pieceColor = trimmedBoard[index] & 0b11000
-          const pieceType = trimmedBoard[index] & 0b00111
-
-          console.log(`piece of color ${PieceColor[pieceColor]} and type ${PieceType[pieceType]}`)
+        if (trimmedBoard[index] !== 32 && trimmedBoard[index] !== 0) {
+          const pieceColor = trimmedBoard[index] & PIECE_COLOR_MASK
+          const pieceType = trimmedBoard[index] & PIECE_TYPE_MASK
 
           const piece = this.handleCreatePiece(pieceColor, pieceType)
 
+          piece.on("pointerdown", this.onPieceClick, this)
           piece.x = 64 + 128 * file
           piece.y = 64 + 128 * rank
+          piece.rank = rank
+          piece.file = file
           this.addChild(piece)
           this.cellState[index].piece = piece
         }
       }
     }
+
+    this.setActivePieces(this.currentTurn)
   }
 
+  /**
+   * Creates a piece based on a piece color and piece type
+   *
+   * @param {PieceColor} pieceColor Color of the piece being created
+   * @param {PieceType} pieceType Type of the piece being created
+   * @returns {Piece} The created piece
+   */
   private handleCreatePiece(pieceColor: PieceColor, pieceType: PieceType): Piece {
     const spriteName = `${PieceColor[pieceColor].toLowerCase()}${PieceType[pieceType]}`
     const sprite = this.pieceRegistry[spriteName]
@@ -309,6 +356,50 @@ export class ChessBoard extends Container {
     return piece
   }
 
+  /**
+   * Enables the interactivity of the pieces that are moveable in the current turn
+   *
+   * @param {PieceColor} color The color of the pieces to enable
+   */
+  private setActivePieces(color: PieceColor): void {
+    let whiteValue = color == PieceColor.White
+
+    this.whitePieces.pawns.forEach((piece: Piece) => (piece.interactive = whiteValue))
+    this.whitePieces.knights.forEach((piece: Piece) => (piece.interactive = whiteValue))
+    this.whitePieces.bishops.forEach((piece: Piece) => (piece.interactive = whiteValue))
+    this.whitePieces.rooks.forEach((piece: Piece) => (piece.interactive = whiteValue))
+    this.whitePieces.queens.forEach((piece: Piece) => (piece.interactive = whiteValue))
+    this.whitePieces.king.interactive = whiteValue
+
+    this.blackPieces.pawns.forEach((piece: Piece) => (piece.interactive = !whiteValue))
+    this.blackPieces.knights.forEach((piece: Piece) => (piece.interactive = !whiteValue))
+    this.blackPieces.bishops.forEach((piece: Piece) => (piece.interactive = !whiteValue))
+    this.blackPieces.rooks.forEach((piece: Piece) => (piece.interactive = !whiteValue))
+    this.blackPieces.queens.forEach((piece: Piece) => (piece.interactive = !whiteValue))
+    this.blackPieces.king.interactive = !whiteValue
+  }
+
+  /**
+   * Moves board state to the next turn, and handles all checks associated with that
+   */
+  private advanceCurrentTurn(resetHalfMove: boolean = false): void {
+    const nextTurn = this.currentTurn == PieceColor.White ? PieceColor.Black : PieceColor.White
+    this.setActivePieces(nextTurn)
+
+    this.setAllCellsInactive() // DEBUG
+
+    if (nextTurn == PieceColor.White) {
+      this.currentMove += 1
+    }
+
+    if (!resetHalfMove) {
+      this.halfmoveClockValue += 1
+    } else {
+      this.halfmoveClockValue = 0
+    }
+    this.currentTurn = nextTurn
+  }
+
   // ---------------------- Utilities ---------------------------------------------------
   /**
    * Utility method to trim 120 square board to 64 squares for rendering
@@ -327,9 +418,129 @@ export class ChessBoard extends Container {
     return outputRep
   }
 
+  private setAllEmptyCellsActive(): void {
+    this.cellState
+      .filter((cell: CellState) => cell.piece == null)
+      .forEach((cell: CellState) => {
+        cell.image.interactive = true
+        cell.image.on("pointerdown", this.onCellClick, this)
+      })
+  }
+
+  private setAllCellsInactive(): void {
+    this.cellState.forEach((cell: CellState) => {
+      cell.image.interactive = false
+      cell.image.off("pointerdown", this.onCellClick, this)
+    })
+  }
+
+  /**
+   * Utility function to set cells active by a list of indices in mailbox board representation
+   *
+   * @param {number[]} indices The indices of the cells to activate
+   */
+  private setCellsActiveByIndices(indices: number[]): void {
+    indices
+      .filter((index: number) => MailboxToBoardIndexMap[index] != -1)
+      .forEach((index: number) => {
+        const cell = this.cellState[MailboxToBoardIndexMap[index]]
+        cell.image.interactive = true
+        cell.image.on("pointerdown", this.onCellClick, this)
+      })
+  }
+
+  /**
+   * Takes indices in the mailbox representation of the board and higlights them in the matching cells
+   *
+   * @param highlightIndices
+   */
+  private setCellsHighlightedAtIndices(highlightIndices: number[]): void {
+    highlightIndices
+      .filter((index: number) => MailboxToBoardIndexMap[index] != -1)
+      .forEach((index: number) => (this.cellState[MailboxToBoardIndexMap[index]].isHighlighted = true))
+
+    this.redrawBoardCells()
+  }
+
+  private clearAllHighlightedCells(): void {
+    this.cellState.forEach((cell: CellState) => (cell.isHighlighted = false))
+  }
+
+  /**
+   * Utility method to handle moving a piece from one cell to another, updating both 120 cell board representation and 64 rendered cells
+   *
+   * @param {Piece} piece The piece being moved
+   * @param {number} rank The rank to move the piece to
+   * @param {number} file The file to move the piece to
+   */
+  private movePieceTo(piece: Piece, rank: number, file: number): void {
+    piece.rank = rank
+    piece.file = file
+
+    piece.x = CellSize / 2 + CellSize * file
+    piece.y = CellSize / 2 + CellSize * rank
+
+    this.cellState[rank * 8 + file].piece = piece
+
+    this.boardRepresentation[ChessBoard.getIndexFromRankAndFile(rank, file)] = piece.pieceColor | piece.pieceType
+  }
+
   // ------------------ External Interactions -------------------------------------------
   public toggleFlipped(): void {
     this.isFlipped = !this.isFlipped
+  }
+
+  // ------------------ Event Interactions ----------------------------------------------
+  private onCellClick(event: FederatedMouseEvent) {
+    console.log(
+      `Selected cell has piece of color ${PieceColor[this.selectedCell.piece.pieceColor]}, type ${
+        PieceType[this.selectedCell.piece.pieceType]
+      }`
+    )
+
+    let { x: clickX, y: clickY } = this.toLocal(event.global)
+    // NOTE THAT FILES CORRESPOND TO X COORDINATES AND RANKS TO Y
+    let file = Math.floor(clickX / CellSize)
+    let rank = Math.floor(clickY / CellSize)
+
+    const piece = this.selectedCell.piece
+    const startPoint = new Point(piece.file, piece.rank)
+
+    this.movePieceTo(piece, rank, file)
+
+    this.cellState[startPoint.y * 8 + startPoint.x].piece = null
+    this.cellState[startPoint.y * 8 + startPoint.x].isSelected = false
+    this.boardRepresentation[ChessBoard.getIndexFromRankAndFile(startPoint.y, startPoint.x)] = 0
+
+    this.setAllCellsInactive() // DEBUG
+    this.clearAllHighlightedCells()
+
+    console.log(`you clicked on (${rank}, ${file})`)
+
+    this.redrawBoardCells()
+    this.advanceCurrentTurn()
+  }
+
+  private onPieceClick(event: FederatedMouseEvent) {
+    let piece = event.target as Piece
+    this.setChildIndex(piece, this.children.length - 1)
+
+    if (this.selectedCell) {
+      this.clearAllHighlightedCells()
+      this.selectedCell.isSelected = false
+    }
+
+    const cellIndex = piece.rank * 8 + piece.file
+    this.selectedCell = this.cellState[cellIndex]
+    this.cellState[cellIndex].isSelected = true
+
+    const moves = piece.getLegalMoves()
+    console.log(`legal moves are ${moves.quiet}, legal captures are ${moves.captures}`)
+    this.setCellsHighlightedAtIndices(moves.quiet)
+    this.setCellsHighlightedAtIndices(moves.captures)
+    this.setCellsActiveByIndices(moves.quiet)
+
+    this.redrawBoardCells()
   }
 
   // ---------------- Old Functionality -------------------------------------------------

@@ -1,4 +1,4 @@
-import { Application, Sprite, Assets, Spritesheet } from "pixi.js"
+import { Application, Assets, Spritesheet } from "pixi.js"
 import { PieceRegistry } from "./types"
 import ChessBoard from "./components/board"
 
