@@ -52,8 +52,10 @@ export class Piece extends Sprite {
     // Determine movement direction based on the color of the pawn, determine if still on starting rank
     let movementOffset = 0
     let onStartingRank = false
+    let captureOffsets = [9, 11]
     if (this.pieceColor == PieceColor.White) {
       movementOffset = -10
+      captureOffsets = captureOffsets.map((offset: number) => -offset)
       if (this.board.ranksBoard[currentPieceIndex] == 6) {
         onStartingRank = true
       }
@@ -81,7 +83,15 @@ export class Piece extends Sprite {
       legalMoves.push(currentPieceIndex + movementOffset)
     }
 
-    // TODO: Assess captures
+    // Assess normal captures
+    for (let offset of captureOffsets) {
+      const cellValue = this.board.boardRepresentation[currentPieceIndex + offset]
+      if (cellValue != 0 && (cellValue & PIECE_COLOR_MASK) != this.pieceColor) {
+        legalCaptures.push(currentPieceIndex + offset)
+      }
+    }
+
+    // TODO: Assess En Passant captures using en passant target from board
 
     return {
       quiet: legalMoves,

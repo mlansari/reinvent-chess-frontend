@@ -14,6 +14,8 @@ import {
   PIECE_COLOR_MASK,
   PIECE_TYPE_MASK,
   MailboxToBoardIndexMap,
+  CastlingMasks,
+  CastlingAvailability,
 } from "../constants"
 import { PieceLocation, PieceRegistry, CellState, PieceContainer } from "../types"
 import { Piece } from "./piece"
@@ -135,6 +137,105 @@ export class ChessBoard extends Container {
   }
 
   /**
+   * Method used to generate a fen string from the current board state of the game
+   *
+   * @returns {string} The FEN string for the current game state
+   */
+  public outputBoardStateToFen(): string {
+    const fenString = []
+    const trimmedBoard = this.trimBoardToLegalSquares(this.boardRepresentation)
+
+    // Render board state to string
+    let pieceField = ""
+    let emptyCount = 0
+    trimmedBoard.forEach((cellValue: number, index: number) => {
+      if (index > 0 && index % 8 == 0) {
+        if (emptyCount > 0) {
+          pieceField += emptyCount
+        }
+        pieceField += "/"
+        emptyCount = 0
+      }
+
+      if (cellValue == 0) {
+        emptyCount += 1
+      } else {
+        let char = ""
+        const pieceType = cellValue & PIECE_TYPE_MASK
+        switch (pieceType) {
+          case PieceType.Pawn:
+            char = "P"
+            break
+          case PieceType.Knight:
+            char = "N"
+            break
+          case PieceType.Bishop:
+            char = "B"
+            break
+          case PieceType.Rook:
+            char = "R"
+            break
+          case PieceType.Queen:
+            char = "Q"
+            break
+          case PieceType.King:
+            char = "K"
+            break
+        }
+
+        if (emptyCount > 0) {
+          pieceField += emptyCount
+        }
+
+        if ((cellValue & PIECE_COLOR_MASK) == PieceColor.Black) {
+          pieceField += char.toLowerCase()
+        } else {
+          pieceField += char.toLowerCase()
+        }
+        emptyCount = 0
+      }
+    })
+    fenString.push(pieceField)
+
+    // Output active color field
+    fenString.push(this.currentTurn == PieceColor.White ? "w" : "b")
+
+    // Output castling availability
+    let castlingState = ""
+    if ((this.castlingAvailability & CastlingMasks.K) == CastlingAvailability.K) {
+      castlingState += "K"
+    }
+    if ((this.castlingAvailability & CastlingMasks.Q) == CastlingAvailability.Q) {
+      castlingState += "Q"
+    }
+    if ((this.castlingAvailability & CastlingMasks.k) == CastlingAvailability.k) {
+      castlingState += "k"
+    }
+    if ((this.castlingAvailability & CastlingMasks.q) == CastlingAvailability.q) {
+      castlingState += "q"
+    }
+    if (castlingState.length == 0) {
+      castlingState = "-"
+    }
+    fenString.push(castlingState)
+
+    // Output en passant target square availability state
+    if (this.enPassantTargetSquareIndex == -1) {
+      fenString.push("-")
+    } else {
+      fenString.push(ChessBoard.mapIndexToAlgebraicNotation(this.enPassantTargetSquareIndex))
+    }
+
+    // Output half move clock information
+    fenString.push(this.halfmoveClockValue)
+
+    // Output full move number
+    fenString.push(this.currentMove)
+
+    return fenString.join(" ")
+  }
+
+  /**
    * Utility method used to generate the clean and empty cell reps for the board
    */
   private generateBoardCells(): void {
@@ -151,6 +252,8 @@ export class ChessBoard extends Container {
           image: new Graphics(),
           isSelected: false,
           isHighlighted: false,
+          isAttacked: false,
+          isChecked: false,
         }
 
         const x = file * CellSize
@@ -183,6 +286,10 @@ export class ChessBoard extends Container {
           }
         } else if (cell.isSelected) {
           color = Colors.Selected
+        } else if (cell.isChecked) {
+          color = Colors.Checked
+        } else if (cell.isAttacked) {
+          color = Colors.Attacked
         } else {
           color = cell.color
         }
@@ -466,6 +573,18 @@ export class ChessBoard extends Container {
     this.cellState.forEach((cell: CellState) => (cell.isHighlighted = false))
   }
 
+  private setCellsAttackedAtIndices(attackedIndices: number[]): void {
+    attackedIndices
+      .filter((index: number) => MailboxToBoardIndexMap[index] != -1)
+      .forEach((index: number) => {
+        this.cellState[MailboxToBoardIndexMap[index]].isAttacked = true
+      })
+  }
+
+  private clearAllAttackedCells(): void {
+    this.cellState.forEach((cell: CellState) => (cell.isAttacked = false))
+  }
+
   /**
    * Utility method to handle moving a piece from one cell to another, updating both 120 cell board representation and 64 rendered cells
    *
@@ -491,13 +610,7 @@ export class ChessBoard extends Container {
   }
 
   // ------------------ Event Interactions ----------------------------------------------
-  private onCellClick(event: FederatedMouseEvent) {
-    console.log(
-      `Selected cell has piece of color ${PieceColor[this.selectedCell.piece.pieceColor]}, type ${
-        PieceType[this.selectedCell.piece.pieceType]
-      }`
-    )
-
+  private onCellClick(event: FederatedMouseEvent): void {
     let { x: clickX, y: clickY } = this.toLocal(event.global)
     // NOTE THAT FILES CORRESPOND TO X COORDINATES AND RANKS TO Y
     let file = Math.floor(clickX / CellSize)
@@ -514,14 +627,15 @@ export class ChessBoard extends Container {
 
     this.setAllCellsInactive() // DEBUG
     this.clearAllHighlightedCells()
-
-    console.log(`you clicked on (${rank}, ${file})`)
+    this.clearAllAttackedCells()
 
     this.redrawBoardCells()
     this.advanceCurrentTurn()
+
+    console.log(`position is now ${this.outputBoardStateToFen()}`)
   }
 
-  private onPieceClick(event: FederatedMouseEvent) {
+  private onPieceClick(event: FederatedMouseEvent): void {
     let piece = event.target as Piece
     this.setChildIndex(piece, this.children.length - 1)
 
@@ -537,7 +651,7 @@ export class ChessBoard extends Container {
     const moves = piece.getLegalMoves()
     console.log(`legal moves are ${moves.quiet}, legal captures are ${moves.captures}`)
     this.setCellsHighlightedAtIndices(moves.quiet)
-    this.setCellsHighlightedAtIndices(moves.captures)
+    this.setCellsAttackedAtIndices(moves.captures)
     this.setCellsActiveByIndices(moves.quiet)
 
     this.redrawBoardCells()

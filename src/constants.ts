@@ -73,6 +73,13 @@ export enum CastlingAvailability {
   q = 8,
 }
 
+export const CastlingMasks = {
+  K: 0b0001,
+  Q: 0b0010,
+  k: 0b0100,
+  q: 0b1000,
+}
+
 export const fenCastlingMapping = {
   "-": 0,
   K: CastlingAvailability.K,
@@ -114,6 +121,9 @@ export enum Colors {
   DarkHighlight = 0x95ccf0,
 
   Selected = 0x9662f6,
+
+  Attacked = 0xed3761,
+  Checked = 0x69021a,
 
   Text = 0x000000,
 }

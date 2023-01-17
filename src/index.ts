@@ -1,4 +1,4 @@
-import { Application, Assets, Spritesheet } from "pixi.js"
+import { Application, Assets, Spritesheet, Text } from "pixi.js"
 import { PieceRegistry } from "./types"
 import ChessBoard from "./components/board"
 
@@ -14,6 +14,12 @@ class Game {
   board: ChessBoard
   pieceRegistry: PieceRegistry = null
 
+  // Debug lines
+  gameString: Text
+  moveCounter: Text
+  turnColor: Text
+  generalInfo: Text
+
   constructor() {
     this.board = new ChessBoard()
 
@@ -23,6 +29,8 @@ class Game {
     this.board.y = (app.view.height - this.board.height) / 2
 
     this.loadSpriteSheet()
+
+    console.log(`fen string of current state is ${this.board.outputBoardStateToFen()}`)
   }
 
   private loadSpriteSheet() {
@@ -44,6 +52,14 @@ class Game {
       }
 
       this.board.setPiecesUp(this.pieceRegistry)
+    })
+  }
+
+  private renderDebugInfo() {
+    this.gameString = new Text("", {
+      align: "center",
+      stroke: "#000",
+      strokeThickness: 2,
     })
   }
 }

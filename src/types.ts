@@ -44,4 +44,6 @@ export interface CellState {
 
   isSelected: boolean
   isHighlighted: boolean
+  isAttacked: boolean
+  isChecked: boolean
 }
