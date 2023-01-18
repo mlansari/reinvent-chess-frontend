@@ -610,6 +610,12 @@ export class ChessBoard extends Container {
   }
 
   // ------------------ Event Interactions ----------------------------------------------
+
+  /**
+   * Event handler for cells being clicked when cell interactivity is enabled
+   *
+   * @param {FederatedMouseEvent} event The emitted event containing context details
+   */
   private onCellClick(event: FederatedMouseEvent): void {
     let { x: clickX, y: clickY } = this.toLocal(event.global)
     // NOTE THAT FILES CORRESPOND TO X COORDINATES AND RANKS TO Y
@@ -625,16 +631,77 @@ export class ChessBoard extends Container {
     this.cellState[startPoint.y * 8 + startPoint.x].isSelected = false
     this.boardRepresentation[ChessBoard.getIndexFromRankAndFile(startPoint.y, startPoint.x)] = 0
 
+    // Check if this move performed was a castling move
+    if (piece.pieceType == PieceType.King && Math.abs(startPoint.x - file) > 1) {
+      if (startPoint.x - file > 0) {
+        // Queenside
+        const rookStartPoint = new Point(0, startPoint.y)
+        const rookPiece = this.cellState[rookStartPoint.y * 8 + rookStartPoint.x].piece
+        this.movePieceTo(rookPiece, rookStartPoint.y, 3)
+
+        this.cellState[rookStartPoint.y * 8 + rookStartPoint.x].piece = null
+        this.boardRepresentation[ChessBoard.getIndexFromRankAndFile(rookStartPoint.y, rookStartPoint.x)] = 0
+      } else {
+        // Kingside
+        const rookStartPoint = new Point(7, startPoint.y)
+        const rookPiece = this.cellState[rookStartPoint.y * 8 + rookStartPoint.x].piece
+        this.movePieceTo(rookPiece, rookStartPoint.y, 5)
+
+        this.cellState[rookStartPoint.y * 8 + rookStartPoint.x].piece = null
+        this.boardRepresentation[ChessBoard.getIndexFromRankAndFile(rookStartPoint.y, rookStartPoint.x)] = 0
+      }
+    }
+
+    // TODO: Move Castling state check and updates to helper function
+    // Handle castling availability updates when piece moved is king
+    if (piece.pieceType == PieceType.King && this.castlingAvailability > 0) {
+      if (piece.pieceColor == PieceColor.Black) {
+        this.castlingAvailability &= 0b0011
+      } else {
+        this.castlingAvailability &= 0b1100
+      }
+    }
+
+    // Handle castling availability updates when piece moved is rook
+    if (piece.pieceType == PieceType.Rook && this.castlingAvailability > 0) {
+      if (piece.pieceColor == PieceColor.Black && startPoint.x == 0 && startPoint.y == 0) {
+        this.castlingAvailability &= ~CastlingMasks.q
+      } else if (piece.pieceColor == PieceColor.Black && startPoint.x == 7 && startPoint.y == 0) {
+        this.castlingAvailability &= ~CastlingMasks.k
+      } else if (piece.pieceColor == PieceColor.White && startPoint.x == 0 && startPoint.y == 7) {
+        this.castlingAvailability &= ~CastlingMasks.Q
+      } else if (piece.pieceColor == PieceColor.White && startPoint.x == 7 && startPoint.y == 7) {
+        this.castlingAvailability &= ~CastlingMasks.K
+      }
+    }
+
+    // Check if a current en passant target is set, and remove, as it's only available for one turn after the move
+    if (this.enPassantTargetSquareIndex > 0) {
+      this.enPassantTargetSquareIndex = -1
+    }
+
+    // Handle updating en passant target if a pawn is moved 2 squares
+    if (piece.pieceType == PieceType.Pawn) {
+      if (piece.pieceColor == PieceColor.White && startPoint.y == 6 && rank == 4) {
+        this.enPassantTargetSquareIndex = ChessBoard.getIndexFromRankAndFile(rank + 1, file)
+      } else if (piece.pieceColor == PieceColor.Black && startPoint.y == 1 && rank == 3) {
+        this.enPassantTargetSquareIndex = ChessBoard.getIndexFromRankAndFile(rank - 1, file)
+      }
+    }
+
     this.setAllCellsInactive() // DEBUG
     this.clearAllHighlightedCells()
     this.clearAllAttackedCells()
 
     this.redrawBoardCells()
-    this.advanceCurrentTurn()
-
-    console.log(`position is now ${this.outputBoardStateToFen()}`)
+    this.advanceCurrentTurn(piece.pieceType == PieceType.Pawn)
   }
 
+  /**
+   * Event handler for pieces being clicked
+   *
+   * @param {FederatedMouseEvent} event The emitted event containing context details
+   */
   private onPieceClick(event: FederatedMouseEvent): void {
     let piece = event.target as Piece
     this.setChildIndex(piece, this.children.length - 1)
@@ -649,9 +716,9 @@ export class ChessBoard extends Container {
     this.cellState[cellIndex].isSelected = true
 
     const moves = piece.getLegalMoves()
-    console.log(`legal moves are ${moves.quiet}, legal captures are ${moves.captures}`)
     this.setCellsHighlightedAtIndices(moves.quiet)
     this.setCellsAttackedAtIndices(moves.captures)
+
     this.setCellsActiveByIndices(moves.quiet)
 
     this.redrawBoardCells()
@@ -680,7 +747,7 @@ export class ChessBoard extends Container {
 
   public static mapIndexToAlgebraicNotation(index: number): string {
     const file = indexToAlgebraicLetterMapping[index % 10]
-    const rank = Math.floor(index / 10) - 1
+    const rank = 8 - (Math.floor(index / 10) - 1) + 1
 
     if (file == "X" || rank < 1 || rank > 8) {
       throw new Error(`index ${index} is out of bounds for translation to algebraic notation`)

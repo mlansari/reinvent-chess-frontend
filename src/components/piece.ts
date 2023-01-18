@@ -1,5 +1,14 @@
 import { FederatedMouseEvent, Sprite, Texture } from "pixi.js"
-import { MovementOffsets, OFF_BOARD, PieceColor, PieceType, PIECE_COLOR_MASK, SlidingMovement } from "../constants"
+import {
+  CastlingIndices,
+  CastlingMasks,
+  MovementOffsets,
+  OFF_BOARD,
+  PieceColor,
+  PieceType,
+  PIECE_COLOR_MASK,
+  SlidingMovement,
+} from "../constants"
 import { MoveOptions } from "../types"
 import ChessBoard from "./board"
 
@@ -83,15 +92,16 @@ export class Piece extends Sprite {
       legalMoves.push(currentPieceIndex + movementOffset)
     }
 
-    // Assess normal captures
+    // Assess captures
     for (let offset of captureOffsets) {
       const cellValue = this.board.boardRepresentation[currentPieceIndex + offset]
       if (cellValue != 0 && (cellValue & PIECE_COLOR_MASK) != this.pieceColor) {
         legalCaptures.push(currentPieceIndex + offset)
+      } else if (currentPieceIndex + offset == this.board.enPassantTargetSquareIndex) {
+        // Handle en passant
+        legalCaptures.push(currentPieceIndex + offset)
       }
     }
-
-    // TODO: Assess En Passant captures using en passant target from board
 
     return {
       quiet: legalMoves,
@@ -102,7 +112,7 @@ export class Piece extends Sprite {
   /**
    * This method handles generating a list of legal moves that this piece can take
    *
-   * @returns {number[]} List of indices this piece can be moved to
+   * @returns {MoveOptions} List of indices this piece can be moved to, and can attack
    */
   private generateLegalMovesAsPiece(): MoveOptions {
     const currentPieceIndex = ChessBoard.getIndexFromRankAndFile(this.rank, this.file)
@@ -133,9 +143,58 @@ export class Piece extends Sprite {
       }
     }
 
+    // Assess castling state, we handle castling as a king move
+    if (this.pieceType == PieceType.King && this.board.castlingAvailability > 0) {
+      // White checks
+      if (
+        this.pieceColor == PieceColor.White &&
+        (this.board.castlingAvailability & CastlingMasks.Q) > 0 &&
+        this.areCellsEmpty(CastlingIndices.Q)
+      ) {
+        legalMoves.push(93)
+      }
+      if (
+        this.pieceColor == PieceColor.White &&
+        (this.board.castlingAvailability & CastlingMasks.K) > 0 &&
+        this.areCellsEmpty(CastlingIndices.K)
+      ) {
+        legalMoves.push(97)
+      }
+
+      // Black checks
+      if (
+        this.pieceColor == PieceColor.Black &&
+        (this.board.castlingAvailability & CastlingMasks.q) > 0 &&
+        this.areCellsEmpty(CastlingIndices.q)
+      ) {
+        legalMoves.push(23)
+      }
+      if (
+        this.pieceColor == PieceColor.Black &&
+        (this.board.castlingAvailability & CastlingMasks.k) > 0 &&
+        this.areCellsEmpty(CastlingIndices.k)
+      ) {
+        legalMoves.push(27)
+      }
+    }
+
     return {
       quiet: legalMoves,
       captures: legalCaptures,
     }
+  }
+
+  /**
+   * Utility method to check if all cells in an input array are empty
+   *
+   * @param {number[]} cellIndices the indices to check if all are empty
+   * @returns {boolean} true if empty, false otherwise
+   */
+  private areCellsEmpty(cellIndices: number[]): boolean {
+    return (
+      cellIndices
+        .map((square: number) => this.board.boardRepresentation[square])
+        .reduce((prevSum: number, cellValue: number) => prevSum + cellValue) == 0
+    )
   }
 }

@@ -31,6 +31,12 @@ class Game {
     this.loadSpriteSheet()
 
     console.log(`fen string of current state is ${this.board.outputBoardStateToFen()}`)
+
+    this.renderDebugInfo()
+
+    app.ticker.add(() => {
+      this.gameString.text = this.board.outputBoardStateToFen()
+    })
   }
 
   private loadSpriteSheet() {
@@ -56,11 +62,16 @@ class Game {
   }
 
   private renderDebugInfo() {
-    this.gameString = new Text("", {
+    this.gameString = new Text("test", {
       align: "center",
-      stroke: "#000",
-      strokeThickness: 2,
+      fill: "#ffffff",
+      strokeThickness: 0,
     })
+    app.stage.addChild(this.gameString)
+    this.gameString.anchor.set(0.5)
+
+    this.gameString.x = app.view.width / 2
+    this.gameString.y = 50
   }
 }
 

@@ -80,6 +80,13 @@ export const CastlingMasks = {
   q: 0b1000,
 }
 
+export const CastlingIndices = {
+  K: [96, 97],
+  Q: [92, 93, 94],
+  k: [26, 27],
+  q: [22, 23, 24],
+}
+
 export const fenCastlingMapping = {
   "-": 0,
   K: CastlingAvailability.K,
